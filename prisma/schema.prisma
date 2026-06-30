@@ -1,0 +1,558 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  SALES
+  DESIGNER
+  CUSTOMER
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  CONSULTATION
+  QUOTE_REQUEST
+  CONTACT_FORM
+  REFERRAL
+  OTHER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  SITE_VISIT
+  DESIGN_REVIEW
+  FOLLOW_UP
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+// ─── Auth & Users ────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String?
+  passwordHash      String    @map("password_hash")
+  role              Role      @default(CUSTOMER)
+  firstName         String    @map("first_name")
+  lastName          String    @map("last_name")
+  avatarUrl         String?   @map("avatar_url")
+  phoneVerifiedAt   DateTime? @map("phone_verified_at")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  isActive          Boolean   @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  refreshTokens     RefreshToken[]
+  auditLogs         AuditLog[]
+  assignedLeads     Lead[]              @relation("AssignedSales")
+  leadNotes         LeadNote[]
+  designerProfile   DesignerProfile?
+  customerAppointments Appointment[]    @relation("CustomerAppointments")
+  designerAppointments Appointment[]    @relation("DesignerAppointments")
+  quotations        Quotation[]
+  customerProjects  Project[]           @relation("CustomerProjects")
+  designerProjects  Project[]           @relation("DesignerProjects")
+  savedDesigns      SavedDesign[]
+  favouriteDesigns  FavouriteDesign[]
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  metadata  Json?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model DesignerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  bio         String?
+  specialty   String?
+  experience  Int?
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("designer_profiles")
+}
+
+// ─── CMS & Public Content ────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  portfolioProjects PortfolioProject[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model PortfolioProject {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String?
+  categoryId  String        @map("category_id")
+  location    String?
+  area        String?
+  budget      String?
+  duration    String?
+  isFeatured  Boolean       @default(false) @map("is_featured")
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?     @map("published_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  images           PortfolioImage[]
+  savedDesigns     SavedDesign[]
+  favouriteDesigns FavouriteDesign[]
+
+  @@index([status, isFeatured])
+  @@index([categoryId])
+  @@map("portfolio_projects")
+}
+
+model PortfolioImage {
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  url       String
+  alt       String?
+  sortOrder Int      @default(0) @map("sort_order")
+  isBefore  Boolean  @default(false) @map("is_before")
+  pairId    String?  @map("pair_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@map("portfolio_images")
+}
+
+model GalleryImage {
+  id        String        @id @default(cuid())
+  title     String
+  url       String
+  alt       String?
+  sortOrder Int           @default(0) @map("sort_order")
+  status    ContentStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, sortOrder])
+  @@map("gallery_images")
+}
+
+model BlogCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  posts BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogTag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  posts BlogPostTag[]
+
+  @@map("blog_tags")
+}
+
+model BlogPost {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String        @unique
+  excerpt         String?
+  content         String
+  featuredImage   String?       @map("featured_image")
+  categoryId      String?       @map("category_id")
+  authorName      String        @map("author_name")
+  status          ContentStatus @default(DRAFT)
+  metaTitle       String?       @map("meta_title")
+  metaDescription String?       @map("meta_description")
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  category BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags     BlogPostTag[]
+
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogPostTag {
+  postId String @map("post_id")
+  tagId  String @map("tag_id")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
+}
+
+model Testimonial {
+  id         String        @id @default(cuid())
+  name       String
+  location   String?
+  rating     Int           @default(5)
+  content    String
+  photoUrl   String?       @map("photo_url")
+  isFeatured Boolean       @default(false) @map("is_featured")
+  status     ContentStatus @default(PUBLISHED)
+  sortOrder  Int           @default(0) @map("sort_order")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, isFeatured])
+  @@map("testimonials")
+}
+
+model Faq {
+  id        String        @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  sortOrder Int           @default(0) @map("sort_order")
+  status    ContentStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, sortOrder])
+  @@map("faqs")
+}
+
+model PricingPackage {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  priceFrom   Decimal       @map("price_from") @db.Decimal(12, 2)
+  priceTo     Decimal?      @map("price_to") @db.Decimal(12, 2)
+  features    Json          @default("[]")
+  isPopular   Boolean       @default(false) @map("is_popular")
+  sortOrder   Int           @default(0) @map("sort_order")
+  status      ContentStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, sortOrder])
+  @@map("pricing_packages")
+}
+
+// ─── Lead Generation ─────────────────────────────────────────────────────────
+
+model Lead {
+  id           String     @id @default(cuid())
+  firstName    String     @map("first_name")
+  lastName     String?    @map("last_name")
+  email        String
+  phone        String?
+  city         String?
+  propertyType String?    @map("property_type")
+  budget       String?
+  message      String?
+  source       LeadSource @default(WEBSITE)
+  status       LeadStatus @default(NEW)
+  assignedToId String?    @map("assigned_to_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  assignedTo User?        @relation("AssignedSales", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes      LeadNote[]
+  quotations Quotation[]
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  userId    String   @map("user_id")
+  note      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_notes")
+}
+
+model ContactMessage {
+  id        String               @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    ContactMessageStatus @default(NEW)
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("contact_messages")
+}
+
+model NewsletterSubscriber {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  subscribedAt    DateTime  @default(now()) @map("subscribed_at")
+  unsubscribedAt  DateTime? @map("unsubscribed_at")
+
+  @@map("newsletter_subscribers")
+}
+
+// ─── Customer & Operations ───────────────────────────────────────────────────
+
+model Appointment {
+  id          String            @id @default(cuid())
+  customerId  String            @map("customer_id")
+  designerId  String?           @map("designer_id")
+  scheduledAt DateTime          @map("scheduled_at")
+  type        AppointmentType   @default(CONSULTATION)
+  status      AppointmentStatus @default(PENDING)
+  notes       String?
+  address     String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  customer User  @relation("CustomerAppointments", fields: [customerId], references: [id], onDelete: Cascade)
+  designer User? @relation("DesignerAppointments", fields: [designerId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([designerId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Quotation {
+  id          String          @id @default(cuid())
+  customerId  String          @map("customer_id")
+  leadId      String?         @map("lead_id")
+  title       String
+  amount      Decimal         @db.Decimal(12, 2)
+  status      QuotationStatus @default(DRAFT)
+  validUntil  DateTime?       @map("valid_until")
+  pdfUrl      String?         @map("pdf_url")
+  notes       String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  customer User      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lead     Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  invoices Invoice[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("quotations")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  quotationId   String        @map("quotation_id")
+  invoiceNumber String        @unique @map("invoice_number")
+  amount        Decimal       @db.Decimal(12, 2)
+  status        InvoiceStatus @default(DRAFT)
+  pdfUrl        String?       @map("pdf_url")
+  dueDate       DateTime?     @map("due_date")
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("invoices")
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  customerId  String        @map("customer_id")
+  designerId  String?       @map("designer_id")
+  title       String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+  progress    Int           @default(0)
+  startDate   DateTime?     @map("start_date")
+  endDate     DateTime?     @map("end_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  customer   User              @relation("CustomerProjects", fields: [customerId], references: [id], onDelete: Cascade)
+  designer   User?             @relation("DesignerProjects", fields: [designerId], references: [id], onDelete: SetNull)
+  milestones ProjectMilestone[]
+
+  @@index([customerId])
+  @@index([designerId])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectMilestone {
+  id          String          @id @default(cuid())
+  projectId   String          @map("project_id")
+  title       String
+  description String?
+  status      MilestoneStatus @default(PENDING)
+  dueDate     DateTime?       @map("due_date")
+  completedAt DateTime?       @map("completed_at")
+  sortOrder   Int             @default(0) @map("sort_order")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@map("project_milestones")
+}
+
+model SavedDesign {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("saved_designs")
+}
+
+model FavouriteDesign {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("favourite_designs")
+}

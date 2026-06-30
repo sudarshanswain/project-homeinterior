@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: homeinterior
+          POSTGRES_PASSWORD: homeinterior_secret
+          POSTGRES_DB: homeinterior
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homeinterior -d homeinterior"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://homeinterior:homeinterior_secret@localhost:5432/homeinterior?schema=public
+      DIRECT_URL: postgresql://homeinterior:homeinterior_secret@localhost:5432/homeinterior?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-characters-long
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm run build

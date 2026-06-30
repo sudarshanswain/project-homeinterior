@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: homeinterior-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: homeinterior
+      POSTGRES_PASSWORD: homeinterior_secret
+      POSTGRES_DB: homeinterior
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homeinterior -d homeinterior"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: homeinterior-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+        DIRECT_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+        JWT_ACCESS_SECRET: dev-access-secret-minimum-32-characters-long
+        JWT_REFRESH_SECRET: dev-refresh-secret-minimum-32-characters-long
+        NEXT_PUBLIC_APP_URL: http://localhost:3000
+    container_name: homeinterior-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+      DIRECT_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+      JWT_ACCESS_SECRET: dev-access-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: dev-refresh-secret-minimum-32-characters-long
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: ./uploads
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@homeinterior.local
+      ADMIN_NOTIFICATION_EMAIL: admin@homeinterior.local
+      RATE_LIMIT_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads_data:/app/uploads
+
+  migrate:
+    image: node:22-alpine
+    container_name: homeinterior-migrate
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+      DIRECT_URL: postgresql://homeinterior:homeinterior_secret@postgres:5432/homeinterior?schema=public
+    volumes:
+      - .:/app
+    command: sh -c "npm ci && npx prisma migrate deploy && npm run db:seed"
+    profiles:
+      - migrate
+
+volumes:
+  postgres_data:
+  uploads_data:
