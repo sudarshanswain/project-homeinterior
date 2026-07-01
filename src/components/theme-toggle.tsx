@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  className?: string;
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -30,7 +34,8 @@ export function ThemeToggle() {
       className={cn(
         "rounded-full p-2 transition-colors",
         "hover:bg-muted",
-        "focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+        "focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2",
+        className
       )}
       aria-label="Toggle theme"
     >

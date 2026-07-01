@@ -1,28 +1,24 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
-import { useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, Phone, Mail } from "lucide-react";
 import { siteConfig } from "@/config/site";
 
 export function CtaSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
   return (
-    <section id="contact" className="relative py-24 overflow-hidden">
+    <section id="contact" className="scroll-offset relative py-24 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-background to-accent/5" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--accent)_0%,_transparent_50%)] opacity-10" />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" ref={ref}>
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6 }}
             className="flex flex-col justify-center"
           >
@@ -73,7 +69,8 @@ export function CtaSection() {
           {/* Right Content - CTA Card */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex items-center"
           >
@@ -121,25 +118,24 @@ export function CtaSection() {
                 </li>
               </ul>
 
-              {/* CTA Buttons */}
-              <div className="mt-8 space-y-4">
-                <Link
-                  href={`https://wa.me/${siteConfig.whatsapp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground transition-all hover:scale-105 hover:shadow-xl"
-                >
-                  Book via WhatsApp
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
-                <Link
-                  href={`tel:${siteConfig.contact.phone}`}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-accent px-8 py-4 text-base font-semibold text-accent transition-all hover:bg-accent hover:text-accent-foreground"
-                >
-                  <Phone className="h-5 w-5" />
-                  Call Now
-                </Link>
-              </div>
+               {/* CTA Buttons */}
+               <div className="mt-8 space-y-4">
+                 <Link
+                   href="/estimation"
+                   className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground transition-all hover:scale-105 hover:shadow-xl"
+                 >
+                   Get Free Estimate
+                   <ArrowRight className="h-5 w-5" />
+                 </Link>
+                 <Link
+                   href={`https://wa.me/${siteConfig.whatsapp}`}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-accent px-8 py-4 text-base font-semibold text-accent transition-all hover:bg-accent hover:text-accent-foreground"
+                 >
+                   Book via WhatsApp
+                 </Link>
+               </div>
 
               {/* Trust Badge */}
               <p className="mt-6 text-center text-xs text-muted-foreground">

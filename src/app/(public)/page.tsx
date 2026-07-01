@@ -1,31 +1,33 @@
-import { Navbar } from "@/components/navbar";
-import { HeroSection } from "@/components/hero-section";
-import { StatsSection } from "@/components/stats-section";
-import { ServicesSection } from "@/components/services-section";
-import { ProcessSection } from "@/components/process-section";
-import { WhyChooseUs } from "@/components/why-choose-us";
-import { PortfolioSection } from "@/components/portfolio-section";
-import { TestimonialsSection } from "@/components/testimonials-section";
-import { FaqSection } from "@/components/faq-section";
+import { DynamicNavbar } from "@/components/dynamic-navbar";
+import { DynamicHeroSection } from "@/components/dynamic-hero-section";
+import { DynamicStatsSection } from "@/components/dynamic-stats-section";
+import { DynamicServicesSection } from "@/components/dynamic-services-section";
+import { DynamicProcessSection } from "@/components/dynamic-process-section";
+import { DynamicWhyChooseUs } from "@/components/dynamic-why-choose-us";
+import { DynamicPortfolioSection } from "@/components/dynamic-portfolio-section";
+import { DynamicTestimonialsSection } from "@/components/dynamic-testimonials-section";
+import { DynamicFaqSection } from "@/components/dynamic-faq-section";
+import { EstimationProcessSection } from "@/components/estimation-process-section";
 import { CtaSection } from "@/components/cta-section";
-import { Footer } from "@/components/footer";
+import { DynamicFooter } from "@/components/dynamic-footer";
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
+      <DynamicNavbar />
       <main className="flex-1">
-        <HeroSection />
-        <StatsSection />
-        <ServicesSection />
-        <ProcessSection />
-        <WhyChooseUs />
-        <PortfolioSection />
-        <TestimonialsSection />
-        <FaqSection />
+        <DynamicHeroSection />
+        <DynamicStatsSection />
+        <DynamicServicesSection />
+        <DynamicProcessSection />
+        <DynamicWhyChooseUs />
+        <DynamicPortfolioSection />
+        <DynamicTestimonialsSection />
+        <DynamicFaqSection />
+        <EstimationProcessSection />
         <CtaSection />
       </main>
-      <Footer />
+      <DynamicFooter />
     </div>
   );
 }

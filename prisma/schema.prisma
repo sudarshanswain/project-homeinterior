@@ -122,6 +122,7 @@ model User {
   designerProjects  Project[]           @relation("DesignerProjects")
   savedDesigns      SavedDesign[]
   favouriteDesigns  FavouriteDesign[]
+  customerProfile   Customer?
 
   @@index([role])
   @@index([isActive])
@@ -215,6 +216,7 @@ model PortfolioProject {
 
   category         Category          @relation(fields: [categoryId], references: [id])
   images           PortfolioImage[]
+  videos           PortfolioVideo[]
   savedDesigns     SavedDesign[]
   favouriteDesigns FavouriteDesign[]
 
@@ -224,19 +226,54 @@ model PortfolioProject {
 }
 
 model PortfolioImage {
-  id        String   @id @default(cuid())
-  projectId String   @map("project_id")
-  url       String
-  alt       String?
-  sortOrder Int      @default(0) @map("sort_order")
-  isBefore  Boolean  @default(false) @map("is_before")
-  pairId    String?  @map("pair_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  url         String
+  thumbnail   String?
+  alt         String?
+  type        MediaType @default(IMAGE) @map("type")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isBefore    Boolean  @default(false) @map("is_before")
+  pairId      String?  @map("pair_id")
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type")
+  width       Int?
+  height      Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   project PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, sortOrder])
   @@map("portfolio_images")
+}
+
+model PortfolioVideo {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  type        VideoType @default(UPLOAD) @map("type")
+  url         String
+  thumbnail   String?
+  title       String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, sortOrder])
+  @@map("portfolio_videos")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum VideoType {
+  UPLOAD
+  YOUTUBE
+  VIMEO
 }
 
 model GalleryImage {
@@ -363,27 +400,35 @@ model PricingPackage {
 // ─── Lead Generation ─────────────────────────────────────────────────────────
 
 model Lead {
-  id           String     @id @default(cuid())
-  firstName    String     @map("first_name")
-  lastName     String?    @map("last_name")
-  email        String
-  phone        String?
-  city         String?
-  propertyType String?    @map("property_type")
-  budget       String?
-  message      String?
-  source       LeadSource @default(WEBSITE)
-  status       LeadStatus @default(NEW)
-  assignedToId String?    @map("assigned_to_id")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id               String     @id @default(cuid())
+  leadNumber       String     @unique @map("lead_number")
+  customerId       String     @map("customer_id")
+  source           LeadSource @default(WEBSITE)
+  status           LeadStatus @default(NEW)
+  priority         String     @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  estimatedValue   Decimal?   @map("estimated_value") @db.Decimal(12, 2)
+  assignedToId     String?    @map("assigned_to_id")
+  notes            String?
+  followUpDate     DateTime?  @map("follow_up_date")
+  convertedAt      DateTime?  @map("converted_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  assignedTo User?        @relation("AssignedSales", fields: [assignedToId], references: [id], onDelete: SetNull)
-  notes      LeadNote[]
-  quotations Quotation[]
+  customer          Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedTo        User?                @relation("AssignedSales", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notesList         LeadNote[]
+  property          Property?
+  requirements      Requirement?
+  attachments       LeadAttachment[]
+  vendorAssignments VendorAssignment[]
+  statusHistory     LeadStatusHistory[]
+  quotations        Quotation[]
+  projects          Project[]
 
+  @@index([leadNumber])
   @@index([status])
   @@index([assignedToId])
+  @@index([customerId])
   @@index([createdAt])
   @@map("leads")
 }
@@ -494,6 +539,7 @@ model Project {
   id          String        @id @default(cuid())
   customerId  String        @map("customer_id")
   designerId  String?       @map("designer_id")
+  leadId      String?       @map("lead_id")
   title       String
   description String?
   status      ProjectStatus @default(PLANNING)
@@ -505,10 +551,12 @@ model Project {
 
   customer   User              @relation("CustomerProjects", fields: [customerId], references: [id], onDelete: Cascade)
   designer   User?             @relation("DesignerProjects", fields: [designerId], references: [id], onDelete: SetNull)
+  lead       Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
   milestones ProjectMilestone[]
 
   @@index([customerId])
   @@index([designerId])
+  @@index([leadId])
   @@index([status])
   @@map("projects")
 }
@@ -555,4 +603,337 @@ model FavouriteDesign {
 
   @@unique([userId, projectId])
   @@map("favourite_designs")
+}
+
+// ─── Lead Management System ────────────────────────────────────────────────────
+
+model Customer {
+  id              String    @id @default(cuid())
+  userId          String?   @unique @map("user_id")
+  fullName        String    @map("full_name")
+  phone           String
+  whatsapp        String?
+  email           String    @unique
+  city            String?
+  state           String?
+  preferredTime   String?   @map("preferred_time")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user         User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  properties   Property[]
+  leads        Lead[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("customers")
+}
+
+model Property {
+  id                String           @id @default(cuid())
+  customerId        String           @map("customer_id")
+  leadId            String?          @map("lead_id")
+  propertyType      PropertyType
+  configuration     String?
+  totalArea         Int              @map("total_area")
+  status            PropertyStatus   @default(READY_TO_MOVE)
+  expectedPossession DateTime?       @map("expected_possession")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  lead       Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  rooms      Room[]
+
+  @@unique([leadId])
+  @@index([customerId])
+  @@index([leadId])
+  @@map("properties")
+}
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  INDEPENDENT_HOUSE
+  COMMERCIAL
+  OFFICE
+  RETAIL
+  RESTAURANT
+  HOTEL
+}
+
+enum PropertyStatus {
+  READY_TO_MOVE
+  UNDER_CONSTRUCTION
+  RENOVATION
+}
+
+model Room {
+  id                String    @id @default(cuid())
+  propertyId        String    @map("property_id")
+  roomName          String    @map("room_name")
+  length            Decimal?  @db.Decimal(10, 2)
+  width             Decimal?  @db.Decimal(10, 2)
+  height            Decimal?  @db.Decimal(10, 2)
+  area              Decimal?  @db.Decimal(10, 2)
+  dimensionMode     String    @default("LENGTH_WIDTH") @map("dimension_mode")
+  wardrobeNeeded    Boolean   @default(false) @map("wardrobe_needed")
+  falseCeiling      Boolean   @default(false) @map("false_ceiling")
+  lighting          Boolean   @default(false)
+  painting          Boolean   @default(false)
+  flooring          Boolean   @default(false)
+  tvUnit            Boolean   @default(false) @map("tv_unit")
+  wallpaper         Boolean   @default(false)
+  lightingType      String    @default("BASIC") @map("lighting_type")
+  flooringType      String    @default("TILES") @map("flooring_type")
+  furnitureRequired Boolean   @default(false) @map("furniture_required")
+  additionalNotes   String?   @map("additional_notes")
+  remarks           String?
+  sortOrder         Int       @default(0) @map("sort_order")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@map("rooms")
+}
+
+model Requirement {
+  id              String   @id @default(cuid())
+  leadId          String   @unique @map("lead_id")
+  services        Json     @default("[]") // Array of selected services
+  designStyle     String?  @map("design_style")
+  inspirationUrls Json?    @map("inspiration_urls") @default("[]")
+  budgetMin       Decimal? @map("budget_min") @db.Decimal(12, 2)
+  budgetMax       Decimal? @map("budget_max") @db.Decimal(12, 2)
+  budgetCustom    Decimal? @map("budget_custom") @db.Decimal(12, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("requirements")
+}
+
+model LeadAttachment {
+  id          String   @id @default(cuid())
+  leadId      String   @map("lead_id")
+  fileName    String   @map("file_name")
+  fileUrl     String   @map("file_url")
+  fileType    String?  @map("file_type")
+  fileSize    Int?     @map("file_size")
+  category    String?  // floor_plan, cad, room_image, video, reference
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_attachments")
+}
+
+model VendorAssignment {
+  id           String            @id @default(cuid())
+  leadId       String            @map("lead_id")
+  vendorId     String            @map("vendor_id")
+  vendorName   String            @map("vendor_name")
+  vendorEmail  String            @map("vendor_email")
+  vendorPhone  String            @map("vendor_phone")
+  status       VendorAssignStatus @default(PENDING)
+  assignedAt   DateTime          @default(now()) @map("assigned_at")
+  assignedById String            @map("assigned_by_id")
+
+  lead         Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotations   VendorQuotation[]
+
+  @@unique([leadId, vendorEmail])
+  @@index([leadId])
+  @@index([vendorId])
+  @@map("vendor_assignments")
+}
+
+enum VendorAssignStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model VendorQuotation {
+  id              String            @id @default(cuid())
+  vendorAssignmentId String         @map("vendor_assignment_id")
+  estimatedCost   Decimal           @map("estimated_cost") @db.Decimal(12, 2)
+  timeline        String? // e.g., "2-3 months"
+  remarks         String?
+  quotationPdf    String?           @map("quotation_pdf")
+  status          QuotationStatus   @default(DRAFT)
+  submittedAt     DateTime?         @map("submitted_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  vendorAssignment VendorAssignment @relation(fields: [vendorAssignmentId], references: [id], onDelete: Cascade)
+
+  @@index([vendorAssignmentId])
+  @@index([status])
+  @@map("vendor_quotations")
+}
+
+model LeadStatusHistory {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  userId    String?  @map("user_id")
+  fromStatus LeadStatus?
+  toStatus  LeadStatus
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([createdAt])
+  @@map("lead_status_history")
+}
+
+// ─── Site Settings & CMS ──────────────────────────────────────────────────────
+
+model SiteSettings {
+  id              String   @id @default("default")
+
+  // Company Information
+  companyName     String   @map("company_name")
+  tagline         String
+  description     String
+  logo            String?
+  favicon         String?
+
+  // Contact Information
+  phone           String   @map("contact_phone")
+  email           String   @map("contact_email")
+  whatsapp        String   @map("whatsapp_number")
+
+  // Address
+  addressLine1    String?  @map("address_line1")
+  addressLine2    String?  @map("address_line2")
+  city            String?
+  state           String?
+  country         String   @default("India")
+  postalCode      String?  @map("postal_code")
+
+  // Social Media
+  facebook        String?
+  instagram       String?
+  linkedin        String?
+  youtube         String?
+  twitter         String?
+  pinterest       String?
+
+  // Branding
+  primaryColor    String   @default("#0f172a") @map("primary_color")
+  secondaryColor  String   @default("#1e293b") @map("secondary_color")
+  accentColor     String   @default("#f59e0b") @map("accent_color")
+
+  // SEO
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description")
+  metaKeywords    String?  @map("meta_keywords")
+
+  // Analytics
+  googleAnalyticsId       String?  @map("google_analytics_id")
+  googleTagManagerId      String?  @map("google_tag_manager_id")
+  facebookPixelId         String?  @map("facebook_pixel_id")
+
+  // System
+  copyrightText   String?  @map("copyright_text")
+  defaultLanguage String   @default("en") @map("default_language")
+  timezone        String   @default("Asia/Kolkata")
+  currency        String   @default("INR")
+  maintenanceMode Boolean  @default(false) @map("maintenance_mode")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model HeroSection {
+  id              String   @id @default(cuid())
+  title           String
+  subtitle        String
+  badge           String?
+  primaryCtaText  String   @map("primary_cta_text")
+  primaryCtaLink  String   @map("primary_cta_link")
+  secondaryCtaText String? @map("secondary_cta_text")
+  secondaryCtaLink String? @map("secondary_cta_link")
+  backgroundImage String?   @map("background_image")
+  overlayOpacity  Int      @default(50) @map("overlay_opacity")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_sections")
+}
+
+model Stat {
+  id          String   @id @default(cuid())
+  label       String
+  value       String
+  icon        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("stats")
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String
+  shortDescription String? @map("short_description")
+  icon            String?
+  image           String?
+  features        Json     @default("[]")
+  sortOrder       Int      @default(0) @map("sort_order")
+  isActive        Boolean  @default(true) @map("is_active")
+  isFeatured      Boolean  @default(false) @map("is_featured")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("services")
+}
+
+model ProcessStep {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String?
+  stepNumber  String   @map("step_number")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("process_steps")
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("features")
 }
