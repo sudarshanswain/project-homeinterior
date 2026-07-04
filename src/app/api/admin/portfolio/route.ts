@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { processImage, deleteImage } from "@/lib/media-utils";
+import type { PortfolioImageInput, PortfolioVideoInput } from "@/types/portfolio";
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,12 +70,12 @@ export async function POST(request: NextRequest) {
         status,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         images: {
-          create: images?.map((img: any, index: number) => ({
+          create: (images as PortfolioImageInput[])?.map((img, index) => ({
             url: img.url,
             thumbnail: img.thumbnail,
             alt: img.alt,
             sortOrder: index,
-            type: img.type || "IMAGE",
+            type: (img.type || "IMAGE") as "IMAGE" | "VIDEO",
             fileSize: img.fileSize,
             mimeType: img.mimeType,
             width: img.width,
@@ -82,8 +83,8 @@ export async function POST(request: NextRequest) {
           })) || [],
         },
         videos: {
-          create: videos?.map((video: any, index: number) => ({
-            type: video.type || "UPLOAD",
+          create: (videos as PortfolioVideoInput[])?.map((video, index) => ({
+            type: (video.type || "UPLOAD") as "UPLOAD" | "YOUTUBE" | "VIMEO",
             url: video.url,
             thumbnail: video.thumbnail,
             title: video.title,

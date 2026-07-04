@@ -4,12 +4,7 @@ import React from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface StepUploadProps {
-  form: UseFormReturn<any>;
-  onNext: () => void;
-  onBack: () => void;
-}
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface UploadedFile {
   fileName: string;
@@ -19,7 +14,12 @@ interface UploadedFile {
   category: string;
 }
 
-export function StepUpload({ form, onNext, onBack }: StepUploadProps) {
+interface StepUploadProps {
+  form: UseFormReturn<EstimationFormValues>;
+  onNext: () => void;
+}
+
+export function StepUpload({ form, onNext }: StepUploadProps) {
   const files = form.watch("attachments.files") || [];
   const [isUploading, setIsUploading] = React.useState(false);
 
@@ -69,7 +69,7 @@ export function StepUpload({ form, onNext, onBack }: StepUploadProps) {
   };
 
   const removeFile = (index: number) => {
-    const updated = files.filter((_f: any, i: number) => i !== index);
+    const updated = files.filter((_f: UploadedFile, i: number) => i !== index);
     form.setValue("attachments.files", updated);
   };
 
@@ -150,7 +150,7 @@ export function StepUpload({ form, onNext, onBack }: StepUploadProps) {
                   Uploaded Files ({files.length}/20)
                 </Label>
                 <div className="space-y-2">
-                  {files.map((file: any, index: number) => (
+                  {files.map((file: UploadedFile, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 rounded-lg border-2 border-border bg-background"

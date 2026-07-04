@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepPropertyProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
   onBack: () => void;
 }
@@ -70,7 +71,7 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                   <button
                     key={type.value}
                     type="button"
-                    onClick={() => form.setValue("property.propertyType", type.value as any)}
+                    onClick={() => form.setValue("property.propertyType", type.value as "APARTMENT" | "VILLA" | "INDEPENDENT_HOUSE" | "COMMERCIAL" | "OFFICE" | "RETAIL" | "RESTAURANT" | "HOTEL")}
                     className={`relative p-4 rounded-lg border-2 transition-all hover:border-amber-500 ${
                       isSelected
                         ? "border-amber-500 bg-amber-50 shadow-md"
@@ -88,9 +89,9 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                 );
               })}
             </div>
-            {(errors as any).property?.propertyType && (
+            {errors.property?.propertyType && (
               <p className="text-sm text-destructive">
-                {String((errors as any).property.propertyType.message || 'Please select a property type')}
+                {String(errors.property.propertyType.message || 'Please select a property type')}
               </p>
             )}
           </div>
@@ -124,9 +125,9 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                 );
               })}
             </div>
-            {(errors as any).property?.configuration && (
+            {errors.property?.configuration && (
               <p className="text-sm text-destructive">
-                {String((errors as any).property.configuration.message || 'Please select a configuration')}
+                {String(errors.property.configuration.message || 'Please select a configuration')}
               </p>
             )}
           </div>
@@ -142,7 +143,7 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                 type="number"
                 {...form.register("property.totalArea", { valueAsNumber: true })}
                 placeholder="1200"
-                className={`h-12 text-lg ${(errors as any).property?.totalArea ? "border-destructive" : ""}`}
+                className={`h-12 text-lg ${errors.property?.totalArea ? "border-destructive" : ""}`}
               />
               <span className="text-lg font-medium text-muted-foreground">sq ft</span>
             </div>
@@ -159,9 +160,9 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
               <span>200 sq ft</span>
               <span>10,000 sq ft</span>
             </div>
-            {(errors as any).property?.totalArea && (
+            {errors.property?.totalArea && (
               <p className="text-sm text-destructive">
-                {String((errors as any).property.totalArea.message || 'Please enter total area')}
+                {String(errors.property.totalArea.message || 'Please enter total area')}
               </p>
             )}
           </div>
@@ -178,7 +179,7 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                   <button
                     key={s.value}
                     type="button"
-                    onClick={() => form.setValue("property.status", s.value as any)}
+                    onClick={() => form.setValue("property.status", s.value as "READY_TO_MOVE" | "UNDER_CONSTRUCTION" | "RENOVATION")}
                     className={`relative p-4 rounded-lg border-2 transition-all hover:border-amber-500 ${
                       isSelected
                         ? "border-amber-500 bg-amber-50 shadow-md"
@@ -195,9 +196,9 @@ export function StepProperty({ form, onNext, onBack }: StepPropertyProps) {
                 );
               })}
             </div>
-            {(errors as any).property?.status && (
+            {errors.property?.status && (
               <p className="text-sm text-destructive">
-                {String((errors as any).property.status.message || 'Please select property status')}
+                {String(errors.property.status.message || 'Please select property status')}
               </p>
             )}
           </div>

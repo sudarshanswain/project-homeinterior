@@ -4,9 +4,10 @@ import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepCustomerProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
 }
 
@@ -42,11 +43,11 @@ export function StepCustomer({ form, onNext }: StepCustomerProps) {
                 id="customer.fullName"
                 {...form.register("customer.fullName")}
                 placeholder="John Doe"
-                className={`h-12 ${(errors as any).customer?.fullName ? "border-destructive" : ""}`}
+                className={`h-12 ${errors.customer?.fullName ? "border-destructive" : ""}`}
               />
-              {(errors as any).customer?.fullName && (
+              {errors.customer?.fullName && (
                 <p className="text-sm text-destructive mt-1">
-                  {String((errors as any).customer.fullName.message || 'This field is required')}
+                  {String(errors.customer.fullName.message || 'This field is required')}
                 </p>
               )}
             </div>
@@ -59,11 +60,11 @@ export function StepCustomer({ form, onNext }: StepCustomerProps) {
                 id="customer.phone"
                 {...form.register("customer.phone")}
                 placeholder="+91 98765 43210"
-                className={`h-12 ${(errors as any).customer?.phone ? "border-destructive" : ""}`}
+                className={`h-12 ${errors.customer?.phone ? "border-destructive" : ""}`}
               />
-              {(errors as any).customer?.phone && (
+              {errors.customer?.phone && (
                 <p className="text-sm text-destructive mt-1">
-                  {String((errors as any).customer.phone.message || 'This field is required')}
+                  {String(errors.customer.phone.message || 'This field is required')}
                 </p>
               )}
             </div>
@@ -87,11 +88,11 @@ export function StepCustomer({ form, onNext }: StepCustomerProps) {
                 type="email"
                 {...form.register("customer.email")}
                 placeholder="john@example.com"
-                className={`h-12 ${(errors as any).customer?.email ? "border-destructive" : ""}`}
+                className={`h-12 ${errors.customer?.email ? "border-destructive" : ""}`}
               />
-              {(errors as any).customer?.email && (
+              {errors.customer?.email && (
                 <p className="text-sm text-destructive mt-1">
-                  {String((errors as any).customer.email.message || 'This field is required')}
+                  {String(errors.customer.email.message || 'This field is required')}
                 </p>
               )}
             </div>
@@ -104,11 +105,11 @@ export function StepCustomer({ form, onNext }: StepCustomerProps) {
                 id="customer.city"
                 {...form.register("customer.city")}
                 placeholder="Mumbai"
-                className={`h-12 ${(errors as any).customer?.city ? "border-destructive" : ""}`}
+                className={`h-12 ${errors.customer?.city ? "border-destructive" : ""}`}
               />
-              {(errors as any).customer?.city && (
+              {errors.customer?.city && (
                 <p className="text-sm text-destructive mt-1">
-                  {String((errors as any).customer.city.message || 'This field is required')}
+                  {String(errors.customer.city.message || 'This field is required')}
                 </p>
               )}
             </div>
@@ -121,11 +122,11 @@ export function StepCustomer({ form, onNext }: StepCustomerProps) {
                 id="customer.state"
                 {...form.register("customer.state")}
                 placeholder="Maharashtra"
-                className={`h-12 ${(errors as any).customer?.state ? "border-destructive" : ""}`}
+                className={`h-12 ${errors.customer?.state ? "border-destructive" : ""}`}
               />
-              {(errors as any).customer?.state && (
+              {errors.customer?.state && (
                 <p className="text-sm text-destructive mt-1">
-                  {String((errors as any).customer.state.message || 'This field is required')}
+                  {String(errors.customer.state.message || 'This field is required')}
                 </p>
               )}
             </div>

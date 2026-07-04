@@ -9,9 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CUSTOM_ROOM_TYPES, LIGHTING_OPTIONS, FLOORING_OPTIONS } from "@/lib/validations/lead";
 import { generateRooms, createDefaultRoom, RoomData } from "@/lib/estimation";
 import { Copy, Plus, Trash2, Ruler, LayoutGrid, Bed, Bath, Home, Sofa, UtensilsCrossed, SquareStack } from "lucide-react";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepRoomsProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
   onBack: () => void;
   configuration?: string;
@@ -41,7 +42,7 @@ interface RoomCardProps {
   room: RoomData;
   index: number;
   totalRooms: number;
-  onUpdate: (index: number, field: string, value: any) => void;
+  onUpdate: (index: number, field: string, value: number | string | boolean) => void;
   onRemove: (index: number) => void;
   onCopy: (index: number) => void;
   errors?: Record<string, string>;
@@ -218,28 +219,28 @@ function RoomCard({ room, index, totalRooms, onUpdate, onRemove, onCopy, errors 
         <div>
           <Label className="text-base font-semibold mb-3 block">Amenities & Finishes</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { key: "wardrobeNeeded", label: "Wardrobe" },
-              { key: "falseCeiling", label: "False Ceiling" },
-              { key: "tvUnit", label: "TV Unit" },
-              { key: "wallpaper", label: "Wallpaper" },
-              { key: "furnitureRequired", label: "Furniture" },
-            ].map((item) => (
-              <div
-                key={item.key}
-                className={`p-3 rounded-lg border-2 transition-all cursor-pointer text-center ${
-                  (room as any)[item.key]
-                    ? "border-accent bg-accent/10"
-                    : "border-border hover:border-accent/30"
-                }`}
-                onClick={() => onUpdate(index, item.key, !(room as any)[item.key])}
-              >
-                <p className="text-sm font-medium mb-1">{item.label}</p>
-                <p className={`text-xs font-bold ${(room as any)[item.key] ? "text-accent" : "text-muted-foreground"}`}>
-                  {(room as any)[item.key] ? "Yes" : "No"}
-                </p>
-              </div>
-            ))}
+              {[
+                { key: "wardrobeNeeded" as const, label: "Wardrobe" },
+                { key: "falseCeiling" as const, label: "False Ceiling" },
+                { key: "tvUnit" as const, label: "TV Unit" },
+                { key: "wallpaper" as const, label: "Wallpaper" },
+                { key: "furnitureRequired" as const, label: "Furniture" },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className={`p-3 rounded-lg border-2 transition-all cursor-pointer text-center ${
+                    room[item.key]
+                      ? "border-accent bg-accent/10"
+                      : "border-border hover:border-accent/30"
+                  }`}
+                  onClick={() => onUpdate(index, item.key, !room[item.key])}
+                >
+                  <p className="text-sm font-medium mb-1">{item.label}</p>
+                  <p className={`text-xs font-bold ${room[item.key] ? "text-accent" : "text-muted-foreground"}`}>
+                    {room[item.key] ? "Yes" : "No"}
+                  </p>
+                </div>
+              ))}
           </div>
         </div>
 
@@ -323,23 +324,23 @@ export function StepRooms({ form, onNext, onBack, configuration, totalArea }: St
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const updateRoom = useCallback((index: number, field: string, value: any) => {
-    const updated = [...rooms] as any[];
-    updated[index] = { ...updated[index], [field]: value };
+  const updateRoom = useCallback((index: number, field: string, value: number | string | boolean) => {
+    const updated = [...rooms] as RoomData[];
+    updated[index] = { ...updated[index], [field]: value as never };
     // Auto-calculate area when length/width changes
     if (field === "length" || field === "width") {
-      const len = field === "length" ? value : (updated[index] as any).length;
-      const wid = field === "width" ? value : (updated[index] as any).width;
+      const len = field === "length" ? (value as number) : updated[index].length;
+      const wid = field === "width" ? (value as number) : updated[index].width;
       if (len > 0 && wid > 0) {
-        (updated[index] as any).area = len * wid;
+        updated[index].area = len * wid;
       }
     }
     form.setValue("rooms.rooms", updated);
   }, [rooms, form]);
 
   const removeRoom = useCallback((index: number) => {
-    const updated = rooms.filter((_: any, i: number) => i !== index);
-    form.setValue("rooms.rooms", updated);
+    const updated = rooms.filter((_i: unknown, i: number) => i !== index);
+    form.setValue("rooms.rooms", updated as RoomData[]);
   }, [rooms, form]);
 
   const addCustomRoom = useCallback(() => {
@@ -355,7 +356,7 @@ export function StepRooms({ form, onNext, onBack, configuration, totalArea }: St
   const copyPreviousRoom = useCallback((index: number) => {
     if (index > 0) {
       const prevRoom = rooms[index - 1];
-      const updated = [...rooms] as any[];
+      const updated = [...rooms] as RoomData[];
       updated[index] = { ...prevRoom, roomName: updated[index].roomName };
       form.setValue("rooms.rooms", updated);
     }
@@ -366,17 +367,15 @@ export function StepRooms({ form, onNext, onBack, configuration, totalArea }: St
   // Live calculations
   const totalRoomsCount = rooms.length;
   const totalInteriorArea = useMemo(() => {
-    return rooms.reduce((sum: number, room: any) => {
-      const r = room as any;
-      if (r.dimensionMode === "LENGTH_WIDTH" && r.length > 0 && r.width > 0) {
-        return sum + r.length * r.width;
+    return rooms.reduce((sum: number, room: RoomData) => {
+      if (room.dimensionMode === "LENGTH_WIDTH" && room.length > 0 && room.width > 0) {
+        return sum + room.length * room.width;
       }
-      return sum + (r.area || 0);
+      return sum + (room.area || 0);
     }, 0);
   }, [rooms]);
 
-  const roomsCompleted = rooms.filter((r: any) => {
-    const room = r as any;
+  const roomsCompleted = rooms.filter((room: RoomData) => {
     if (room.dimensionMode === "LENGTH_WIDTH") {
       return room.length > 0 && room.width > 0;
     }
@@ -386,8 +385,7 @@ export function StepRooms({ form, onNext, onBack, configuration, totalArea }: St
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Validate no room has 0 sq ft
-    const invalidRooms = rooms.filter((r: any) => {
-      const room = r as any;
+    const invalidRooms = rooms.filter((room: RoomData) => {
       if (room.dimensionMode === "LENGTH_WIDTH") {
         return room.length <= 0 || room.width <= 0;
       }
@@ -412,10 +410,10 @@ export function StepRooms({ form, onNext, onBack, configuration, totalArea }: St
         </div>
 
         <div className="space-y-6">
-          {rooms.map((room: any, index: number) => (
+          {rooms.map((room: RoomData, index: number) => (
             <RoomCard
               key={index}
-              room={room as any}
+              room={room}
               index={index}
               totalRooms={rooms.length}
               onUpdate={updateRoom}

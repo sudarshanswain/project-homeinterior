@@ -121,6 +121,14 @@ export interface VendorQuotation {
   updatedAt: string;
 }
 
+export interface LeadNote {
+  id: string;
+  leadId: string;
+  userId: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface LeadStatusHistory {
   id: string;
   leadId: string;

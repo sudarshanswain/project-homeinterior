@@ -4,6 +4,21 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
+interface SelectContextType {
+  value?: string;
+  onValueChange: (value: string) => void;
+}
+
+const SelectContext = React.createContext<SelectContextType | null>(null);
+
+function useSelectContext() {
+  const context = React.useContext(SelectContext);
+  if (!context) {
+    throw new Error("Select compound components must be used within a Select");
+  }
+  return context;
+}
+
 interface SelectProps {
   value?: string;
   onValueChange: (value: string) => void;
@@ -27,21 +42,23 @@ export function Select({ value, onValueChange, children, className }: SelectProp
   }, []);
 
   return (
-    <div ref={selectRef} className={cn("relative", className)}>
-      <SelectTrigger onClick={() => setIsOpen(!isOpen)}>
-        <SelectValue />
-      </SelectTrigger>
-      {isOpen && (
-        <SelectContent onClose={() => setIsOpen(false)}>
-          {children}
-        </SelectContent>
-      )}
-    </div>
+    <SelectContext.Provider value={{ value, onValueChange }}>
+      <div ref={selectRef} className={cn("relative", className)}>
+        <SelectTrigger onClick={() => setIsOpen(!isOpen)}>
+          <SelectValue />
+        </SelectTrigger>
+        {isOpen && (
+          <SelectContent onClose={() => setIsOpen(false)}>
+            {children}
+          </SelectContent>
+        )}
+      </div>
+    </SelectContext.Provider>
   );
 }
 
 interface SelectTriggerProps {
-  onClick: () => void;
+  onClick?: () => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -68,15 +85,17 @@ interface SelectValueProps {
 }
 
 export function SelectValue({ placeholder, children }: SelectValueProps) {
+  const context = React.useContext(SelectContext);
+  const displayText = children || (context?.value ? context.value.replace(/_/g, " ") : placeholder || "Select...");
   return (
-    <span className={cn(!children && "text-muted-foreground")}>
-      {children || placeholder}
+    <span className={cn(!children && !context?.value && "text-muted-foreground")}>
+      {displayText}
     </span>
   );
 }
 
 interface SelectContentProps {
-  onClose: () => void;
+  onClose?: () => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -110,12 +129,8 @@ interface SelectItemProps {
 }
 
 export function SelectItem({ value, children, onClose, className }: SelectItemProps) {
-  const [isSelected, setIsSelected] = React.useState(false);
-
-  // In a real implementation, this would be controlled by the parent Select component
-  React.useEffect(() => {
-    // This is a simplified version
-  }, []);
+  const { value: selectedValue, onValueChange } = useSelectContext();
+  const isSelected = selectedValue === value;
 
   return (
     <div
@@ -125,7 +140,7 @@ export function SelectItem({ value, children, onClose, className }: SelectItemPr
         className
       )}
       onClick={() => {
-        // This would call onValueChange from parent
+        onValueChange(value);
         onClose?.();
       }}
     >

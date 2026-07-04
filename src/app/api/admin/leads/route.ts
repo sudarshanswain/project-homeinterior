@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { LeadStatus, LeadSource } from "@prisma/client";
+import { LeadStatus, LeadSource, Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20");
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.LeadWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -67,8 +67,8 @@ export async function GET(request: Request) {
         },
         _count: {
           select: {
-            LeadAttachment: true,
-            VendorAssignment: true,
+            attachments: true,
+            vendorAssignments: true,
           },
         },
       },

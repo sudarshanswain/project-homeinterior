@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { LEAD_STATUSES } from "@/lib/validations/lead";
-import { Room, LeadAttachment, VendorAssignment } from "@/types/lead";
+import { Room, LeadAttachment, VendorAssignment, VendorQuotation, LeadStatusHistory, LeadNote } from "@/types/lead";
 
 interface LeadDetail {
   id: string;
@@ -48,12 +47,13 @@ interface LeadDetail {
     budgetCustom?: number;
   };
   attachments: LeadAttachment[];
-  vendorAssignments: (VendorAssignment & { quotations: any[] })[];
-  statusHistory: any[];
-  notesList: any[];
+  vendorAssignments: (VendorAssignment & { quotations: VendorQuotation[] })[];
+  statusHistory: LeadStatusHistory[];
+  notesList: LeadNote[];
 }
 
-export default function AdminLeadDetailPage({ params }: { params: { id: string } }) {
+export default function AdminLeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [lead, setLead] = useState<LeadDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,10 +64,6 @@ export default function AdminLeadDetailPage({ params }: { params: { id: string }
   const [followUpDate, setFollowUpDate] = useState("");
   const [status, setStatus] = useState("");
 
-  useEffect(() => {
-    fetchLead();
-  }, [params.id]);
-
   const fetchLead = async () => {
     try {
       const token = localStorage.getItem("adminToken");
@@ -76,7 +72,7 @@ export default function AdminLeadDetailPage({ params }: { params: { id: string }
         return;
       }
 
-      const response = await fetch(`/api/admin/leads/${params.id}`, {
+      const response = await fetch(`/api/admin/leads/${resolvedParams.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -98,6 +94,10 @@ export default function AdminLeadDetailPage({ params }: { params: { id: string }
     }
   };
 
+  useEffect(() => {
+    fetchLead();
+  }, [resolvedParams.id]);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdating(true);
@@ -109,7 +109,7 @@ export default function AdminLeadDetailPage({ params }: { params: { id: string }
         return;
       }
 
-      const response = await fetch(`/api/admin/leads/${params.id}`, {
+      const response = await fetch(`/api/admin/leads/${resolvedParams.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -552,7 +552,7 @@ export default function AdminLeadDetailPage({ params }: { params: { id: string }
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 Status History
               </h3>
-          <div className="space-y-3">
+              <div className="space-y-3">
                 {lead.statusHistory.map((entry, index) => (
                   <div key={entry.id} className="flex gap-4">
                     <div className="flex flex-col items-center">

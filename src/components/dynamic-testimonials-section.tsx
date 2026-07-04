@@ -55,7 +55,7 @@ export function DynamicTestimonialsSection() {
             What Our Clients Say
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Don't just take our word for it. Here's what our satisfied clients have to say about their experience with us.
+            {`Don't just take our word for it. Here's what our satisfied clients have to say about their experience with us.`}
           </p>
         </motion.div>
 
@@ -93,7 +93,7 @@ export function DynamicTestimonialsSection() {
 
               {/* Testimonial Text */}
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                "{testimonial.content}"
+                &ldquo;{testimonial.content}&rdquo;
               </p>
 
               {/* Author */}

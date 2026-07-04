@@ -4,15 +4,15 @@ import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { servicesSchema, ServicesInput, AVAILABLE_SERVICES } from "@/lib/validations/lead";
+import { AVAILABLE_SERVICES } from "@/lib/validations/lead";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepServicesProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
-  onBack: () => void;
 }
 
-export function StepServices({ form, onNext, onBack }: StepServicesProps) {
+export function StepServices({ form, onNext }: StepServicesProps) {
   const selectedServices = form.watch("services.services") || [];
 
   const toggleService = (service: string) => {
@@ -78,7 +78,7 @@ export function StepServices({ form, onNext, onBack }: StepServicesProps) {
 
           {form.formState.errors.services && (
             <p className="text-sm text-destructive mt-4">
-              {String((form.formState.errors as any).services?.message || "")}
+              {String(form.formState.errors.services?.message || "")}
             </p>
           )}
         </CardContent>

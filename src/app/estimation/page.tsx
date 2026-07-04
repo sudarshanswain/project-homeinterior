@@ -27,6 +27,7 @@ import {
 } from "@/lib/validations/lead";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Phone, Clock, CheckCircle2 } from "lucide-react";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 const STEPS = [
   { number: 1, title: "Customer Info", description: "Contact details" },
@@ -48,8 +49,9 @@ export default function EstimationPage() {
   const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
   const { success, error: showError } = useToast();
 
-  const form = useForm({
-    resolver: zodResolver(leadSubmissionSchema),
+  const form = useForm<EstimationFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(leadSubmissionSchema) as any,
     defaultValues: {
       customer: {
         fullName: "",
@@ -245,11 +247,11 @@ export default function EstimationPage() {
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <StepCustomer form={form as any} onNext={handleNext} />;
+        return <StepCustomer form={form} onNext={handleNext} />;
       case 1:
         return (
           <StepProperty
-            form={form as any}
+            form={form}
             onNext={handleNext}
             onBack={handleBack}
           />
@@ -257,7 +259,7 @@ export default function EstimationPage() {
       case 2:
         return (
           <StepRooms
-            form={form as any}
+            form={form}
             onNext={handleNext}
             onBack={handleBack}
             configuration={form.watch("property.configuration") || "Custom"}
@@ -267,15 +269,14 @@ export default function EstimationPage() {
       case 3:
         return (
           <StepServices
-            form={form as any}
+            form={form}
             onNext={handleNext}
-            onBack={handleBack}
           />
         );
       case 4:
         return (
           <StepDesign
-            form={form as any}
+            form={form}
             onNext={handleNext}
             onBack={handleBack}
           />
@@ -283,7 +284,7 @@ export default function EstimationPage() {
       case 5:
         return (
           <StepBudget
-            form={form as any}
+            form={form}
             onNext={handleNext}
             onBack={handleBack}
           />
@@ -291,15 +292,14 @@ export default function EstimationPage() {
       case 6:
         return (
           <StepUpload
-            form={form as any}
+            form={form}
             onNext={handleNext}
-            onBack={handleBack}
           />
         );
       case 7:
         return (
           <StepReview
-            form={form as any}
+            form={form}
             onNext={handleSubmit}
             onBack={handleBack}
             onEdit={handleEdit}
@@ -502,9 +502,9 @@ export default function EstimationPage() {
                     <p className="text-sm font-semibold text-foreground">
                       {(() => {
                         const rooms = form.watch("rooms.rooms") || [];
-                        const completed = rooms.filter((r: any) => {
-                          if (r.dimensionMode === "LENGTH_WIDTH") return r.length > 0 && r.width > 0;
-                          return r.area > 0;
+                        const completed = rooms.filter((r: { dimensionMode?: string; length?: number; width?: number; area?: number }) => {
+                          if (r.dimensionMode === "LENGTH_WIDTH") return (r.length ?? 0) > 0 && (r.width ?? 0) > 0;
+                          return (r.area ?? 0) > 0;
                         }).length;
                         return `${completed} / ${rooms.length}`;
                       })()}
@@ -514,9 +514,9 @@ export default function EstimationPage() {
                         className="bg-accent h-1.5 rounded-full transition-all"
                         style={{ width: `${(() => {
                           const rooms = form.watch("rooms.rooms") || [];
-                          return rooms.length > 0 ? ((rooms.filter((r: any) => {
-                            if (r.dimensionMode === "LENGTH_WIDTH") return r.length > 0 && r.width > 0;
-                            return r.area > 0;
+                          return rooms.length > 0 ? ((rooms.filter((r: { dimensionMode?: string; length?: number; width?: number; area?: number }) => {
+                            if (r.dimensionMode === "LENGTH_WIDTH") return (r.length ?? 0) > 0 && (r.width ?? 0) > 0;
+                            return (r.area ?? 0) > 0;
                           }).length / rooms.length) * 100) : 0;
                         })()}%` }}
                       />
@@ -580,7 +580,7 @@ export default function EstimationPage() {
                   />
                 </div>
 
-                <FormProvider {...form as any}>
+                <FormProvider {...form}>
                   <motion.div
                     key={currentStep}
                     initial={{ opacity: 0, x: 20 }}

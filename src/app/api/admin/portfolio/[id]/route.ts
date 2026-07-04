@@ -1,19 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteImage } from "@/lib/media-utils";
+import type { PortfolioImageInput, PortfolioVideoInput } from "@/types/portfolio";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const token = request.headers.get("authorization")?.replace("Bearer ", "");
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const project = await prisma.portfolioProject.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         images: {
@@ -41,9 +43,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const token = request.headers.get("authorization")?.replace("Bearer ", "");
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,7 +57,7 @@ export async function PUT(
 
     // Check if project exists
     const existing = await prisma.portfolioProject.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -65,7 +68,7 @@ export async function PUT(
     const slugExists = await prisma.portfolioProject.findFirst({
       where: {
         slug,
-        id: { not: params.id },
+        id: { not: id },
       },
     });
 
@@ -78,7 +81,7 @@ export async function PUT(
 
     // Delete old images and videos
     const oldProject = await prisma.portfolioProject.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { images: true, videos: true },
     });
 
@@ -90,7 +93,7 @@ export async function PUT(
 
     // Update project with new images and videos
     const project = await prisma.portfolioProject.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         slug,
@@ -104,13 +107,13 @@ export async function PUT(
         status,
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         images: {
-          delete: true,
-          create: images?.map((img: any, index: number) => ({
+          deleteMany: {},
+          create: (images as PortfolioImageInput[])?.map((img, index) => ({
             url: img.url,
             thumbnail: img.thumbnail,
             alt: img.alt,
             sortOrder: index,
-            type: img.type || "IMAGE",
+            type: (img.type || "IMAGE") as "IMAGE" | "VIDEO",
             fileSize: img.fileSize,
             mimeType: img.mimeType,
             width: img.width,
@@ -118,9 +121,9 @@ export async function PUT(
           })) || [],
         },
         videos: {
-          delete: true,
-          create: videos?.map((video: any, index: number) => ({
-            type: video.type || "UPLOAD",
+          deleteMany: {},
+          create: (videos as PortfolioVideoInput[])?.map((video, index) => ({
+            type: (video.type || "UPLOAD") as "UPLOAD" | "YOUTUBE" | "VIMEO",
             url: video.url,
             thumbnail: video.thumbnail,
             title: video.title,
@@ -147,9 +150,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const token = request.headers.get("authorization")?.replace("Bearer ", "");
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -157,7 +161,7 @@ export async function DELETE(
 
     // Get project with images and videos
     const project = await prisma.portfolioProject.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { images: true, videos: true },
     });
 
@@ -172,7 +176,7 @@ export async function DELETE(
 
     // Delete project (cascade will delete database records)
     await prisma.portfolioProject.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Project deleted successfully" });

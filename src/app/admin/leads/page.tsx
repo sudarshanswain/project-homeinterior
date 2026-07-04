@@ -17,7 +17,17 @@ import {
 import { Lead, LeadStatus, LeadSource } from "@/types/lead";
 import { LEAD_STATUSES, LEAD_SOURCES } from "@/lib/validations/lead";
 
-interface LeadWithDetails extends Lead {
+interface LeadWithDetails {
+  id: string;
+  leadNumber: string;
+  source: LeadSource;
+  status: LeadStatus;
+  priority: string;
+  estimatedValue?: number;
+  notes?: string;
+  followUpDate?: string;
+  createdAt: string;
+  updatedAt: string;
   customer: {
     id: string;
     fullName: string;
@@ -25,6 +35,8 @@ interface LeadWithDetails extends Lead {
     phone: string;
     city?: string;
     state?: string;
+    createdAt: string;
+    updatedAt: string;
   };
   property?: {
     id: string;

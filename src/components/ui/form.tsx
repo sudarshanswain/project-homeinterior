@@ -8,13 +8,13 @@ import {
 } from "react-hook-form";
 import { cn } from "@/lib/utils";
 
-interface FormProps<TFormValues extends Record<string, any>> {
+interface FormProps<TFormValues extends Record<string, unknown>> {
   onSubmit: (data: TFormValues) => void;
   children: React.ReactNode;
   className?: string;
 }
 
-export function Form<TFormValues extends Record<string, any>>({
+export function Form<TFormValues extends Record<string, unknown>>({
   onSubmit,
   children,
   className,

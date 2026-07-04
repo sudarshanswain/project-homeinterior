@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BUDGET_RANGE_OPTIONS } from "@/lib/validations/lead";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepBudgetProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
   onBack: () => void;
 }
@@ -21,7 +22,7 @@ export function StepBudget({ form, onNext }: StepBudgetProps) {
     onNext();
   };
 
-  const errors = form.formState.errors as any;
+  const errors = form.formState.errors;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -45,7 +46,7 @@ export function StepBudget({ form, onNext }: StepBudgetProps) {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => form.setValue("budget.budgetRange", option.value)}
+                  onClick={() => form.setValue("budget.budgetRange", option.value as "UNDER_5_LAKHS" | "5_10_LAKHS" | "10_20_LAKHS" | "20_40_LAKHS" | "40_LAKHS_PLUS" | "CUSTOM")}
                   className={`
                     p-6 rounded-xl border-2 transition-all text-left
                     ${selectedRange === option.value
@@ -60,7 +61,7 @@ export function StepBudget({ form, onNext }: StepBudgetProps) {
             </div>
             {errors.budget && (
               <p className="text-sm text-destructive">
-                {String(errors.budget?.message || "")}
+                {String(errors.budget.message || "")}
               </p>
             )}
           </div>
@@ -81,7 +82,7 @@ export function StepBudget({ form, onNext }: StepBudgetProps) {
               />
               {errors.budget && (
                 <p className="text-sm text-destructive">
-                  {String(errors.budget?.budgetCustom?.message || "")}
+                  {String((errors.budget as { budgetCustom?: { message?: string } })?.budgetCustom?.message || "")}
                 </p>
               )}
               {customBudget && customBudget > 0 && (

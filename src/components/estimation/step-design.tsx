@@ -3,10 +3,11 @@
 import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { designPreferenceSchema, DesignPreferenceInput, DESIGN_STYLES } from "@/lib/validations/lead";
+import { DESIGN_STYLES } from "@/lib/validations/lead";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepDesignProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
   onBack: () => void;
 }
@@ -41,7 +42,7 @@ export function StepDesign({ form, onNext, onBack }: StepDesignProps) {
                 <button
                   key={style.value}
                   type="button"
-                  onClick={() => form.setValue("design.designStyle", style.value)}
+                  onClick={() => form.setValue("design.designStyle", style.value as "LUXURY" | "MODERN" | "MINIMALIST" | "SCANDINAVIAN" | "TRADITIONAL" | "INDUSTRIAL" | "CONTEMPORARY")}
                   className={`
                     p-6 rounded-xl border-2 transition-all text-center
                     ${selectedStyle === style.value
@@ -56,7 +57,7 @@ export function StepDesign({ form, onNext, onBack }: StepDesignProps) {
             </div>
             {form.formState.errors.design && (
               <p className="text-sm text-destructive">
-                {String((form.formState.errors as any).design?.message || "")}
+                {String(form.formState.errors.design?.message || "")}
               </p>
             )}
           </div>

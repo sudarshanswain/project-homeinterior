@@ -3,11 +3,11 @@
 import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { leadSubmissionSchema, LeadSubmissionInput } from "@/lib/validations/lead";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, DESIGN_STYLES } from "@/lib/validations/lead";
+import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepReviewProps {
-  form: UseFormReturn<LeadSubmissionInput>;
+  form: UseFormReturn<EstimationFormValues>;
   onNext: () => void;
   onBack: () => void;
   onEdit: (step: number) => void;

@@ -59,15 +59,19 @@ export function useMultiplePublicData(urls: Record<string, string>): DataStates 
     return initial;
   });
 
+  const urlsString = JSON.stringify(urls);
+
   useEffect(() => {
+    const parsedUrls = JSON.parse(urlsString) as Record<string, string>;
+
     const fetchAll = async () => {
-      const newStates: DataStates = { ...states };
+      const newStates: DataStates = {};
 
-      for (const key in urls) {
+      for (const key in parsedUrls) {
         try {
-          newStates[key] = { ...newStates[key], loading: true, error: null };
+          newStates[key] = { data: null, loading: true, error: null };
 
-          const response = await fetch(urls[key]);
+          const response = await fetch(parsedUrls[key]);
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,7 +97,7 @@ export function useMultiplePublicData(urls: Record<string, string>): DataStates 
     };
 
     fetchAll();
-  }, [JSON.stringify(urls)]);
+  }, [urlsString]);
 
   return states;
 }

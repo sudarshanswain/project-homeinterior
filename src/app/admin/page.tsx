@@ -49,8 +49,8 @@ export default function AdminDashboardPage() {
 
       if (response.ok) {
         const projects = await response.json();
-        const totalImages = projects.reduce((sum: number, p: { images: any[] }) => sum + (p.images?.length || 0), 0);
-        const totalVideos = projects.reduce((sum: number, p: { videos: any[] }) => sum + (p.videos?.length || 0), 0);
+        const totalImages = projects.reduce((sum: number, p: { images?: { url: string }[] }) => sum + (p.images?.length || 0), 0);
+        const totalVideos = projects.reduce((sum: number, p: { videos?: { url: string }[] }) => sum + (p.videos?.length || 0), 0);
         const publishedProjects = projects.filter((p: { status: string }) => p.status === "PUBLISHED").length;
 
         setStats({
