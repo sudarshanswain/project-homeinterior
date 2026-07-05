@@ -3,7 +3,7 @@ import { Geist, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { DynamicTheme } from "@/components/dynamic-theme";
 import { siteConfig } from "@/config/site";
-import { SiteSettings } from "@/types/public-api";
+import { getSiteSettings } from "@/lib/site-settings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,36 +19,29 @@ const playfair = Playfair_Display({
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/public/settings`, {
-      next: { revalidate: 3600 },
-    });
-    
-    if (res.ok) {
-      const result = await res.json();
-      const settings: SiteSettings | null = result.data;
-      
-      if (settings) {
-        return {
-          metadataBase: new URL(baseUrl),
-          title: {
-            default: settings.metaTitle || `${settings.companyName} | ${settings.tagline}`,
-            template: `%s | ${settings.companyName}`,
-          },
-          description: settings.metaDescription || settings.description,
-          keywords: settings.metaKeywords?.split(",").map(k => k.trim()) || [],
-          openGraph: {
-            title: settings.companyName,
-            description: settings.description,
-            type: "website",
-          },
-          twitter: {
-            card: "summary_large_image",
-            title: settings.companyName,
-            description: settings.description,
-          },
-        };
-      }
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || siteConfig.url;
+    const settings = await getSiteSettings();
+
+    if (settings) {
+      return {
+        metadataBase: new URL(baseUrl),
+        title: {
+          default: settings.metaTitle || `${settings.companyName} | ${settings.tagline}`,
+          template: `%s | ${settings.companyName}`,
+        },
+        description: settings.metaDescription || settings.description,
+        keywords: settings.metaKeywords?.split(",").map(k => k.trim()) || [],
+        openGraph: {
+          title: settings.companyName,
+          description: settings.description,
+          type: "website",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: settings.companyName,
+          description: settings.description,
+        },
+      };
     }
   } catch (error) {
     console.error("Error fetching settings for metadata:", error);
