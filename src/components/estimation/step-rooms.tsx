@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CUSTOM_ROOM_TYPES, LIGHTING_OPTIONS, FLOORING_OPTIONS } from "@/lib/validations/lead";
 import { generateRooms, createDefaultRoom, RoomData } from "@/lib/estimation";
 import { Copy, Plus, Trash2, Ruler, LayoutGrid, Bed, Bath, Home, Sofa, UtensilsCrossed, SquareStack } from "lucide-react";
+import { SelectionCard, ToggleChip } from "@/components/estimation/selection-card";
 import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepRoomsProps {
@@ -219,48 +220,35 @@ function RoomCard({ room, index, totalRooms, onUpdate, onRemove, onCopy, errors 
         <div>
           <Label className="text-base font-semibold mb-3 block">Amenities & Finishes</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                { key: "wardrobeNeeded" as const, label: "Wardrobe" },
-                { key: "falseCeiling" as const, label: "False Ceiling" },
-                { key: "tvUnit" as const, label: "TV Unit" },
-                { key: "wallpaper" as const, label: "Wallpaper" },
-                { key: "furnitureRequired" as const, label: "Furniture" },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className={`p-3 rounded-lg border-2 transition-all cursor-pointer text-center ${
-                    room[item.key]
-                      ? "border-accent bg-accent/10"
-                      : "border-border hover:border-accent/30"
-                  }`}
-                  onClick={() => onUpdate(index, item.key, !room[item.key])}
-                >
-                  <p className="text-sm font-medium mb-1">{item.label}</p>
-                  <p className={`text-xs font-bold ${room[item.key] ? "text-accent" : "text-muted-foreground"}`}>
-                    {room[item.key] ? "Yes" : "No"}
-                  </p>
-                </div>
-              ))}
+            {[
+              { key: "wardrobeNeeded" as const, label: "Wardrobe" },
+              { key: "falseCeiling" as const, label: "False Ceiling" },
+              { key: "tvUnit" as const, label: "TV Unit" },
+              { key: "wallpaper" as const, label: "Wallpaper" },
+              { key: "furnitureRequired" as const, label: "Furniture" },
+            ].map((item) => (
+              <ToggleChip
+                key={item.key}
+                enabled={room[item.key] as boolean}
+                onToggle={() => onUpdate(index, item.key, !room[item.key])}
+                label={item.label}
+              />
+            ))}
           </div>
         </div>
 
         {/* Lighting Type */}
         <div className="space-y-2">
           <Label className="font-medium">Lighting</Label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {LIGHTING_OPTIONS.map((opt) => (
-              <button
+              <SelectionCard
                 key={opt.value}
-                type="button"
-                onClick={() => onUpdate(index, "lightingType", opt.value)}
-                className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                  room.lightingType === opt.value
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border text-muted-foreground hover:border-accent/50"
-                }`}
+                selected={room.lightingType === opt.value}
+                onSelect={() => onUpdate(index, "lightingType", opt.value)}
               >
-                {opt.label}
-              </button>
+                <div className="font-semibold text-center">{opt.label}</div>
+              </SelectionCard>
             ))}
           </div>
         </div>
@@ -268,20 +256,15 @@ function RoomCard({ room, index, totalRooms, onUpdate, onRemove, onCopy, errors 
         {/* Flooring Type */}
         <div className="space-y-2">
           <Label className="font-medium">Flooring</Label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {FLOORING_OPTIONS.map((opt) => (
-              <button
+              <SelectionCard
                 key={opt.value}
-                type="button"
-                onClick={() => onUpdate(index, "flooringType", opt.value)}
-                className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                  room.flooringType === opt.value
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border text-muted-foreground hover:border-accent/50"
-                }`}
+                selected={room.flooringType === opt.value}
+                onSelect={() => onUpdate(index, "flooringType", opt.value)}
               >
-                {opt.label}
-              </button>
+                <div className="font-semibold text-center">{opt.label}</div>
+              </SelectionCard>
             ))}
           </div>
         </div>

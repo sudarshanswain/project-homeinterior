@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { writeFileSync, mkdirSync, unlinkSync } from "fs";
 import { join } from "path";
 
-const UPLOAD_DIR = join(process.cwd(), "uploads");
+const UPLOAD_DIR = join(process.cwd(), "public", "uploads");
 const PORTFOLIO_DIR = join(UPLOAD_DIR, "portfolio");
 const THUMBNAIL_DIR = join(UPLOAD_DIR, "thumbnails");
 
@@ -60,7 +60,7 @@ export const generateThumbnail = async (
   thumbnailPath: string
 ): Promise<{ width: number; height: number }> => {
   const metadata = await sharp(imagePath).metadata();
-  
+
   await sharp(imagePath)
     .resize(400, 300, { fit: "cover" })
     .webp({ quality: 80 })
@@ -77,9 +77,9 @@ export const processImage = async (file: File): Promise<ProcessedImage> => {
   const timestamp = Date.now();
   const extension = file.name.split(".").pop() || "jpg";
   const filename = `${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-  
+
   const filePath = join(PORTFOLIO_DIR, filename);
-  const thumbnailFilename = `thumb-${filename}.webp`;
+  const thumbnailFilename = `thumb-${filename.split(".")[0]}.webp`;
   const thumbnailPath = join(THUMBNAIL_DIR, thumbnailFilename);
 
   // Save original file
@@ -112,7 +112,7 @@ export const deleteImage = (path: string, thumbnail: string): void => {
   try {
     const fullPath = join(process.cwd(), "public", path);
     const fullThumbnail = join(process.cwd(), "public", thumbnail);
-    
+
     if (path && fullPath !== join(process.cwd(), "public")) {
       unlinkSync(fullPath);
     }

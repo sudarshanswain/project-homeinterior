@@ -7,8 +7,25 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // Validate the request body
-    const validatedData = leadSubmissionSchema.parse(body);
+    // Log incoming payload
+    console.log("===== Incoming Payload =====");
+    console.dir(body, { depth: null });
+    
+    // Validate the request body using safeParse to get detailed errors
+    const parsed = leadSubmissionSchema.safeParse(body);
+    if (!parsed.success) {
+      console.error("Validation failed:", parsed.error.flatten());
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validation failed",
+          errors: parsed.error.flatten(),
+        },
+        { status: 400 }
+      );
+    }
+    
+    const validatedData = parsed.data;
 
     // Generate lead number: INT-YYYY-NNNNNN
     const year = new Date().getFullYear();
@@ -161,21 +178,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error submitting lead:", error);
     
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Validation error",
-          errors: error.message,
-        },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : "Failed to submit lead",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

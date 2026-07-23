@@ -304,7 +304,7 @@ export default function AdminPortfolioPage() {
         {loading ? (
           <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted" />
+              <div key={`skeleton-${i}`} className="h-64 animate-pulse rounded-2xl bg-muted" />
             ))}
           </div>
         ) : (
@@ -608,14 +608,14 @@ export default function AdminPortfolioPage() {
                     />
                   </div>
 
-                  {/* Image Preview Grid */}
-                  {images.length > 0 && (
-                    <div className="mt-4 grid grid-cols-4 gap-4">
-                      {images.map((img, index) => (
-                        <div
-                          key={img.id}
-                          className="group relative aspect-square overflow-hidden rounded-lg border border-border"
-                        >
+                   {/* Image Preview Grid */}
+                   {images.length > 0 && (
+                     <div className="mt-4 grid grid-cols-4 gap-4">
+                       {images.map((img, index) => (
+                         <div
+                           key={img.id || `temp-img-${index}`}
+                           className="group relative aspect-square overflow-hidden rounded-lg border border-border"
+                         >
                           <img
                             src={img.thumbnail || img.url}
                             alt={img.alt || `Image ${index + 1}`}

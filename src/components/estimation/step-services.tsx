@@ -3,8 +3,8 @@
 import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AVAILABLE_SERVICES } from "@/lib/validations/lead";
+import { SelectionCard } from "@/components/estimation/selection-card";
 import type { EstimationFormValues } from "@/types/estimation-form";
 
 interface StepServicesProps {
@@ -49,29 +49,13 @@ export function StepServices({ form, onNext }: StepServicesProps) {
             {AVAILABLE_SERVICES.map((service) => {
               const isSelected = selectedServices.includes(service);
               return (
-                <div
+                <SelectionCard
                   key={service}
-                  className={`
-                    flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer
-                    ${isSelected
-                      ? "border-accent bg-accent/10 shadow-md"
-                      : "border-border hover:border-accent/50"
-                    }
-                  `}
-                  onClick={() => toggleService(service)}
+                  selected={isSelected}
+                  onSelect={() => toggleService(service)}
                 >
-                  <Checkbox
-                    id={service}
-                    checked={isSelected}
-                    onCheckedChange={() => toggleService(service)}
-                  />
-                  <Label
-                    htmlFor={service}
-                    className="text-sm font-medium cursor-pointer flex-1"
-                  >
-                    {service}
-                  </Label>
-                </div>
+                  <div className="font-semibold text-base">{service}</div>
+                </SelectionCard>
               );
             })}
           </div>

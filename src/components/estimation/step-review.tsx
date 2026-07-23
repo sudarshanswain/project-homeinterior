@@ -47,13 +47,8 @@ export function StepReview({ form, onNext, onBack, onEdit }: StepReviewProps) {
     return option?.label || value;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext();
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold text-foreground mb-2">
           Review & Submit
@@ -356,6 +351,6 @@ export function StepReview({ form, onNext, onBack, onEdit }: StepReviewProps) {
           </Card>
         )}
       </div>
-    </form>
+    </div>
   );
 }

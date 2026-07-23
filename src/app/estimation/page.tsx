@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,16 +15,7 @@ import { StepDesign } from "@/components/estimation/step-design";
 import { StepBudget } from "@/components/estimation/step-budget";
 import { StepUpload } from "@/components/estimation/step-upload";
 import { StepReview } from "@/components/estimation/step-review";
-import {
-  leadSubmissionSchema,
-  customerInfoSchema,
-  propertyDetailsSchema,
-  roomsSchema,
-  servicesSchema,
-  designPreferenceSchema,
-  budgetSchema,
-  fileUploadSchema,
-} from "@/lib/validations/lead";
+import { leadSubmissionSchema } from "@/lib/validations/lead";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Phone, Clock, CheckCircle2 } from "lucide-react";
 import type { EstimationFormValues } from "@/types/estimation-form";
@@ -111,89 +102,58 @@ export default function EstimationPage() {
     }
   }, [form]);
 
-  const validateCurrentStep = useCallback(async () => {
-    let schema;
-    switch (currentStep) {
+  const getFieldsForStep = (step: number): string[] => {
+    switch (step) {
       case 0:
-        schema = customerInfoSchema;
-        break;
+        return ['customer.fullName', 'customer.phone', 'customer.email', 'customer.city', 'customer.state'];
       case 1:
-        schema = propertyDetailsSchema;
-        break;
+        return ['property.propertyType', 'property.totalArea', 'property.status'];
       case 2:
-        schema = roomsSchema;
-        break;
+        return ['rooms.rooms'];
       case 3:
-        schema = servicesSchema;
-        break;
+        return ['services.services'];
       case 4:
-        schema = designPreferenceSchema;
-        break;
+        return ['design.designStyle'];
       case 5:
-        schema = budgetSchema;
-        break;
+        return ['budget.budgetRange', 'budget.budgetCustom'];
       case 6:
-        schema = fileUploadSchema;
-        break;
+        return ['attachments.files'];
       default:
-        return true;
+        return [];
     }
-
-    const data = form.getValues();
-    const sectionData = currentStep === 0 ? data.customer :
-                        currentStep === 1 ? data.property :
-                        currentStep === 2 ? data.rooms :
-                        currentStep === 3 ? data.services :
-                        currentStep === 4 ? data.design :
-                        currentStep === 5 ? data.budget :
-                        data.attachments;
-
-    const result = schema.safeParse(sectionData);
-    if (!result.success) {
-      const sectionFields = currentStep === 0 ? ['fullName', 'phone', 'email', 'city', 'state'] :
-                           currentStep === 1 ? ['propertyType', 'totalArea', 'status'] :
-                           currentStep === 2 ? ['rooms'] :
-                           currentStep === 3 ? ['services'] :
-                           currentStep === 4 ? ['designStyle'] :
-                           currentStep === 5 ? ['budgetRange', 'budgetCustom'] :
-                           ['files'];
-      
-      sectionFields.forEach(field => {
-        const fieldPath = currentStep === 0 ? `customer.${field}` :
-                          currentStep === 1 ? `property.${field}` :
-                          currentStep === 2 ? `rooms.${field}` :
-                          currentStep === 3 ? `services.${field}` :
-                          currentStep === 4 ? `design.${field}` :
-                          currentStep === 5 ? `budget.${field}` :
-                          `attachments.${field}`;
-        // @ts-expect-error - dynamic field path
-        form.clearErrors(fieldPath);
-      });
-
-      Object.entries(result.error.flatten().fieldErrors).forEach(([field, errors]) => {
-        const fieldPath = currentStep === 0 ? `customer.${field}` :
-                          currentStep === 1 ? `property.${field}` :
-                          currentStep === 2 ? `rooms.${field}` :
-                          currentStep === 3 ? `services.${field}` :
-                          currentStep === 4 ? `design.${field}` :
-                          currentStep === 5 ? `budget.${field}` :
-                          `attachments.${field}`;
-        // @ts-expect-error - dynamic field path
-        form.setError(fieldPath, { message: errors?.[0] || "Invalid" });
-      });
-      return false;
-    }
-    return true;
-  }, [currentStep, form]);
+  };
 
   const handleNext = async () => {
-    const isValid = await validateCurrentStep();
+    // Clear previous errors
+    form.clearErrors();
+    
+    // Debug logging
+    console.log("=== handleNext Debug ===");
+    console.log("Current Step:", currentStep);
+    console.log("Form Values:", form.getValues());
+    
+    // Validate ONLY the fields for the current step
+    const fieldsToValidate = getFieldsForStep(currentStep);
+    console.log("Validating fields:", fieldsToValidate);
+    
+    const isValid = await form.trigger(fieldsToValidate as FieldPath<EstimationFormValues>[]);
+    console.log("Validation Result:", isValid);
+    console.log("Errors after validation:", form.formState.errors);
+    
     if (!isValid) {
-      showError("Please fix the errors before proceeding");
+      console.error("Validation failed for step:", currentStep);
+      // Scroll to the first error
+      const firstError = document.querySelector('[data-invalid="true"], .text-destructive');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       return;
     }
+    
+    console.log("Moving to next step:", currentStep + 1);
     setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
+    console.log("=== End handleNext Debug ===\n");
   };
 
   const handleBack = () => {
@@ -211,6 +171,10 @@ export default function EstimationPage() {
 
     try {
       const data = form.getValues();
+      
+      // Log the payload before submitting
+      console.log("Submitting Payload");
+      console.dir(data, { depth: null });
 
       const response = await fetch("/api/leads", {
         method: "POST",
@@ -220,19 +184,45 @@ export default function EstimationPage() {
         body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+      
+      // Log the response
+      console.log("API Response:", result);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to submit lead");
+        // Log the error
+        console.error("Submission failed:", result);
+        
+        // Show detailed error message
+        if (result.errors) {
+          // Validation error - show field-level errors
+          const errorMessages: string[] = [];
+          const errors = result.errors as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+          if (errors.formErrors && Array.isArray(errors.formErrors)) {
+            errorMessages.push(...errors.formErrors);
+          }
+          if (errors.fieldErrors) {
+            Object.entries(errors.fieldErrors).forEach(([field, fieldErrorList]) => {
+              if (fieldErrorList && Array.isArray(fieldErrorList) && fieldErrorList.length > 0) {
+                errorMessages.push(`${field}: ${fieldErrorList.join(", ")}`);
+              }
+            });
+          }
+          throw new Error(errorMessages.join("\n") || result.message || "Validation failed");
+        } else {
+          throw new Error(result.message || "Failed to submit lead");
+        }
       }
 
-      const result = await response.json();
       setSubmittedLead(result.data);
 
       localStorage.removeItem(STORAGE_KEY);
 
       success(`Your lead has been submitted successfully. Lead Number: ${result.data.leadNumber}`);
     } catch (error) {
-      showError(error instanceof Error ? error.message : "Failed to submit. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit. Please try again.";
+      console.error("Submission error:", errorMessage);
+      showError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
